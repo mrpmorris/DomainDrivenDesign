@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace MongoDomainDrivenDesign.EFCore.DomainClasses
+namespace DomainDriveDesignTestProject.EFCore.DomainClasses
 {
 	public class AggregateRoot
 	{

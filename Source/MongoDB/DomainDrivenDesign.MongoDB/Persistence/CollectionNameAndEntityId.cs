@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson;
 using System;
 
-namespace PeterLeslieMorris.DomainDrivenDesign.MongoDb.Persistence
+namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	public class CollectionNameAndEntityId : IEquatable<CollectionNameAndEntityId>
 	{

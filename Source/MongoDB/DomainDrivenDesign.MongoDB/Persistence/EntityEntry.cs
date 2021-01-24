@@ -1,7 +1,7 @@
-﻿using PeterLeslieMorris.DomainDrivenDesign.MongoDb.DomainClasses;
+﻿using DomainDrivenDesign.MongoDB.DomainClasses;
 using System;
 
-namespace PeterLeslieMorris.DomainDrivenDesign.MongoDb.Persistence
+namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	public class EntityEntry : IEquatable<EntityEntry>
 	{

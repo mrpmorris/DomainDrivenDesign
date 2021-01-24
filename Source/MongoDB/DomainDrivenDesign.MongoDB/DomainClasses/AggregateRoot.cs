@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson;
 using System;
 
-namespace PeterLeslieMorris.DomainDrivenDesign.MongoDb.DomainClasses
+namespace DomainDrivenDesign.MongoDB.DomainClasses
 {
 	public class AggregateRoot
 	{

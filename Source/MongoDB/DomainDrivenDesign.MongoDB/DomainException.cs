@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PeterLeslieMorris.DomainDrivenDesign.MongoDb
+namespace DomainDrivenDesign.MongoDB
 {
 	public class DomainException : Exception
 	{

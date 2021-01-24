@@ -1,11 +1,10 @@
-﻿using System;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using System;
 
-namespace MongoDomainDrivenDesign.EFCore.DomainClasses
+namespace DomainDriveDesignTestProject.Mongo.DomainClasses
 {
 	public class IncomingFileTransactionEvent
 	{
-		public Guid Id { get; set; }
-		public Guid IncomingFileTransactionId { get; set; }
 		public IncomingFileTransactionEventType Type { get; set; }
 
 		[Obsolete]

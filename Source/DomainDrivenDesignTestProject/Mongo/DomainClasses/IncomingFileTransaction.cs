@@ -1,7 +1,7 @@
-﻿using PeterLeslieMorris.DomainDrivenDesign.MongoDb.DomainClasses;
+﻿using DomainDrivenDesign.MongoDB.DomainClasses;
 using System.Collections.Generic;
 
-namespace MongoDomainDrivenDesign.Mongo.DomainClasses
+namespace DomainDriveDesignTestProject.Mongo.DomainClasses
 {
 	public class IncomingFileTransaction : AggregateRoot
 	{

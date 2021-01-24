@@ -1,4 +1,4 @@
-﻿namespace PeterLeslieMorris.DomainDrivenDesign.MongoDb.Persistence
+﻿namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	public abstract class DatabaseContextOptions
 	{

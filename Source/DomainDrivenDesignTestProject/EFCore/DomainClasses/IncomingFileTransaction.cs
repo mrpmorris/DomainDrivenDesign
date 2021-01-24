@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MongoDomainDrivenDesign.EFCore.DomainClasses
+namespace DomainDriveDesignTestProject.EFCore.DomainClasses
 {
 	public class IncomingFileTransaction : AggregateRoot
 	{

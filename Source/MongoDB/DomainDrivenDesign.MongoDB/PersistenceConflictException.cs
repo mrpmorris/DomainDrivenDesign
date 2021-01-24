@@ -1,4 +1,4 @@
-﻿namespace PeterLeslieMorris.DomainDrivenDesign.MongoDb
+﻿namespace DomainDrivenDesign.MongoDB
 {
 	public class PersistenceConflictException : DomainException
 	{

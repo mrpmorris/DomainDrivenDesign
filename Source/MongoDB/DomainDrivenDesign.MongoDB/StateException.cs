@@ -1,6 +1,6 @@
-﻿using PeterLeslieMorris.DomainDrivenDesign.MongoDb.Persistence;
+﻿using DomainDrivenDesign.MongoDB.Persistence;
 
-namespace PeterLeslieMorris.DomainDrivenDesign.MongoDb
+namespace DomainDrivenDesign.MongoDB
 {
 	public class StateException : DomainException
 	{

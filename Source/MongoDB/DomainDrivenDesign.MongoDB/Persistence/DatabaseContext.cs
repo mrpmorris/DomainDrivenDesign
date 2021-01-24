@@ -1,13 +1,13 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
-using PeterLeslieMorris.DomainDrivenDesign.MongoDb.DomainClasses;
+using DomainDrivenDesign.MongoDB.DomainClasses;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PeterLeslieMorris.DomainDrivenDesign.MongoDb.Persistence
+namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	public abstract partial class DatabaseContext
 	{

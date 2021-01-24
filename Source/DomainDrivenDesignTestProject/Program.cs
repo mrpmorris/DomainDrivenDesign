@@ -1,10 +1,9 @@
-﻿using PeterLeslieMorris.DomainDrivenDesign.MongoDb.Persistence;
+﻿using DomainDrivenDesign.MongoDB.Persistence;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace MongoDomainDrivenDesign
+namespace DomainDriveDesignTestProject
 {
 	class Program
 	{
@@ -51,7 +50,7 @@ namespace MongoDomainDrivenDesign
 			var data = Enumerable.Range(1, 1000).Select(x => new Mongo.DomainClasses.IncomingFileTransaction());
 			MongoDB.Bson.ObjectId firstId = data.First().Id;
 
-			var options = new DatabaseContextOptions<Mongo.ApplicationDbContext>()
+			var options = new DatabaseContextOptions<DomainDriveDesignTestProject.Mongo.ApplicationDbContext>()
 			{
 				ConnectionString = "mongodb://localhost:30001",
 				DatabaseName = "SwitchStream"

@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PeterLeslieMorris.DomainDrivenDesign.MongoDb\PeterLeslieMorris.DomainDrivenDesign.MongoDb.csproj" />
+    <ProjectReference Include="..\MongoDB\DomainDrivenDesign.MongoDB\DomainDrivenDesign.MongoDB.csproj" />
   </ItemGroup>
 
   <ItemGroup>

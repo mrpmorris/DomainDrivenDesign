@@ -1,4 +1,4 @@
-﻿namespace MongoDomainDrivenDesign.Mongo.DomainClasses
+﻿namespace DomainDriveDesignTestProject.EFCore.DomainClasses
 {
 	public enum IncomingFileTransactionEventType
 	{

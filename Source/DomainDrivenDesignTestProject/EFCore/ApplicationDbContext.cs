@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MongoDomainDrivenDesign.EFCore.DomainClasses;
+using DomainDriveDesignTestProject.EFCore.DomainClasses;
 
-namespace MongoDomainDrivenDesign.EFCore
+namespace DomainDriveDesignTestProject.EFCore
 {
 	public class ApplicationDbContext : DbContext
 	{

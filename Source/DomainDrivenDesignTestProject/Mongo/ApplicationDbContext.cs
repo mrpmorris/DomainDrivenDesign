@@ -1,10 +1,6 @@
-﻿using MongoDB.Bson;
-using MongoDB.Driver;
-using PeterLeslieMorris.DomainDrivenDesign.MongoDb.DomainClasses;
-using PeterLeslieMorris.DomainDrivenDesign.MongoDb.Persistence;
-using System.Threading.Tasks;
+﻿using DomainDrivenDesign.MongoDB.Persistence;
 
-namespace MongoDomainDrivenDesign.Mongo
+namespace DomainDriveDesignTestProject.Mongo
 {
 	public class ApplicationDbContext : DatabaseContext
 	{
