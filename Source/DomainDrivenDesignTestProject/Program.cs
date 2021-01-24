@@ -9,6 +9,9 @@ namespace DomainDriveDesignTestProject
 	{
 		static void Main(string[] args)
 		{
+			SaveDataToMongoDB();
+			SaveDataToEFCore();
+
 			long efTotal = 0;
 			long mongoTotal = 0;
 			for (int i = 0; i < 10; i++)
