@@ -94,6 +94,30 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			}
 		}
 
+		public async Task<TEntity?> GetAsync<TEntity>(string collectionName, ObjectId id)
+			where TEntity: AggregateRoot
+		{
+			var key = new CollectionNameAndEntityId(collectionName, id);
+			if (EntityEntryLookup.TryGetValue(key, out EntityEntry entry))
+				return (TEntity)entry.Entity;
+
+			FilterDefinitionBuilder<TEntity> filterBuilder = Builders<TEntity>.Filter;
+			FilterDefinition<TEntity> filter = filterBuilder.Where(x => x.Id == id);
+
+			var collection = MongoDatabase.GetCollection<TEntity>(collectionName);
+
+			IAsyncCursor<TEntity> cursor = await collection.FindAsync<TEntity>(filter).ConfigureAwait(false);
+
+			TEntity? retrievedEntity = null;
+			if (await cursor.MoveNextAsync().ConfigureAwait(false))
+				retrievedEntity = cursor.Current.First();
+
+			if (retrievedEntity is not null)
+				EntityEntryLookup[key] = new EntityEntry(collectionName, retrievedEntity, EntityState.Unmodified);
+
+			return retrievedEntity;
+		}
+
 
 		protected virtual void ConfigureMongoClientSettings(MongoClientSettings mongoClientSettings)
 		{
