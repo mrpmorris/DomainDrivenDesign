@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
@@ -14,6 +15,8 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		protected readonly IMongoClient MongoClient;
 		protected readonly IMongoDatabase MongoDatabase;
 		protected readonly ConcurrentDictionary<CollectionNameAndEntityId, EntityEntry> EntityEntryLookup;
+
+		private int IsLocked;
 
 		public DatabaseContext(DatabaseContextOptions options)
 		{
@@ -63,6 +66,8 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 		public async Task SaveChangesAsync()
 		{
+			if (Interlocked.Increment(ref IsLocked) != 1)
+				throw new InvalidOperationException($"Cannot call {nameof(SaveChangesAsync)} from multiple threads");
 			var collectionNameToChangesLookup = EntityEntryLookup
 				.Select(x => x.Value)
 				.GroupBy(x => x.CollectionName)
@@ -76,13 +81,19 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 					await SaveCollectionChangesAsync(changesWithinCollection.Value).ConfigureAwait(false);
 				}
 				//TODO: Commit transaction
+				UpdateEntityEntryStatesAfterSave();
 			}
 			catch
 			{
 				//TODO: Rollback transaction
 				throw;
 			}
+			finally
+			{
+				Interlocked.Decrement(ref IsLocked);
+			}
 		}
+
 
 		protected virtual void ConfigureMongoClientSettings(MongoClientSettings mongoClientSettings)
 		{
@@ -173,5 +184,32 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				.Select(entity => new DeleteOneModel<AggregateRoot>(filterBuilder.Where(x => x.Id == entity.Id)));
 		}
 
+		private void UpdateEntityEntryStatesAfterSave()
+		{
+			var entityEntryLookupKeysAndValues = EntityEntryLookup.Select(x => x).ToArray();
+			foreach(var kvp in entityEntryLookupKeysAndValues)
+			{
+				switch (kvp.Value.State)
+				{
+					case EntityState.Created:
+					case EntityState.Modified:
+						EntityEntryLookup[kvp.Key] = new EntityEntry(
+							collectionName: kvp.Value.CollectionName,
+							entity: kvp.Value.Entity,
+							state: EntityState.Unmodified);
+						break;
+
+					case EntityState.Deleted:
+						EntityEntryLookup.TryRemove(kvp.Key, out _);
+						break;
+
+					case EntityState.Unmodified:
+						break;
+
+					default:
+						throw new NotImplementedException(kvp.Value.State.ToString());
+				}
+			}
+		}
 	}
 }
