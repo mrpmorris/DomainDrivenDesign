@@ -50,6 +50,10 @@ namespace DomainDriveDesignTestProject
 
 		static void SaveDataToMongoDB()
 		{
+			const string collectionName = Mongo.ApplicationDbContext.CollectionNames.IncomingFileTransaction;
+
+			var data = Enumerable.Range(1, 1000).Select(x => new Mongo.DomainClasses.IncomingFileTransaction());
+
 			var options = new DatabaseContextOptions<DomainDriveDesignTestProject.Mongo.ApplicationDbContext>()
 			{
 				ConnectionString = "mongodb://localhost:30001",
@@ -57,13 +61,8 @@ namespace DomainDriveDesignTestProject
 			};
 			var db = new Mongo.ApplicationDbContext(options);
 
-			var data =
-				Enumerable.Range(1, 1000)
-				.Select(x => new Mongo.DomainClasses.IncomingFileTransaction())
-				.ToArray();
-
 			foreach (Mongo.DomainClasses.IncomingFileTransaction ift in data)
-				db.AddOrUpdate(Mongo.ApplicationDbContext.CollectionNames.IncomingFileTransaction, ift);
+				db.AddOrUpdate(collectionName, ift);
 			db.SaveChangesAsync().Wait();
 		}
 	}

@@ -60,6 +60,9 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			if (entity.Id == default(ObjectId))
 				throw new ArgumentException("Id has not been set", nameof(entity));
 
+			if (GetEntry(collectionName, entity).State == EntityState.Unknown)
+				throw new InvalidOperationException($"Cannot delete an unknown object");
+
 			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
 			EntityEntryLookup[key] = new EntityEntry(collectionName, entity, EntityState.Deleted);
 		}
@@ -151,32 +154,42 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		private async Task SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries)
 		{
 			string collectionName = entityEntries.First().CollectionName;
-			var updates = new List<WriteModel<AggregateRoot>>();
-
-			var stateToEntriesLookup = entityEntries
-				.GroupBy(x => x.State)
-				.ToDictionary(x => x.Key, x => x.Select(entityEntry => entityEntry.Entity).ToArray());
 
 			int expectedInsertedCount = 0;
-			if (stateToEntriesLookup.TryGetValue(EntityState.Created, out AggregateRoot[] createdEntities))
-			{
-				updates.AddRange(CreateInsertActions(createdEntities));
-				expectedInsertedCount = createdEntities.Length;
-			}
-
 			int expectedModifiedCount = 0;
-			if (stateToEntriesLookup.TryGetValue(EntityState.Modified, out AggregateRoot[] modifiedEntities))
+			int expectedDeletedCount = 0;
+
+			var updates = new List<WriteModel<AggregateRoot>>();
+			FilterDefinitionBuilder<AggregateRoot> filterBuilder = Builders<AggregateRoot>.Filter;
+			foreach (EntityEntry entityEntry in entityEntries)
 			{
-				updates.AddRange(CreateReplaceActions(modifiedEntities));
-				expectedModifiedCount = modifiedEntities.Length;
+				switch (entityEntry.State)
+				{
+					case EntityState.Created:
+						expectedInsertedCount++;
+						updates.Add(CreateInsertAction(entityEntry.Entity));
+						break;
+
+					case EntityState.Modified:
+						expectedModifiedCount++;
+						updates.Add(CreateReplaceAction(entityEntry.Entity, filterBuilder));
+						break;
+
+					case EntityState.Deleted:
+						expectedDeletedCount++;
+						updates.Add(CreateDeleteAction(entityEntry.Entity, filterBuilder));
+						break;
+
+					case EntityState.Unmodified:
+						break;
+
+					default:
+						throw new NotImplementedException(entityEntry.State.ToString());
+				}
 			}
 
-			int expectedDeletedCount = 0;
-			if (stateToEntriesLookup.TryGetValue(EntityState.Deleted, out AggregateRoot[] deletedEntities))
-			{
-				updates.AddRange(CreateReplaceActions(modifiedEntities));
-				expectedDeletedCount = deletedEntities.Length;
-			}
+			if (!updates.Any())
+				return;
 
 			var collection = MongoDatabase.GetCollection<AggregateRoot>(collectionName);
 			BulkWriteResult<AggregateRoot> result = await collection.BulkWriteAsync(updates).ConfigureAwait(false);
@@ -188,25 +201,22 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			}
 		}
 
-		private IEnumerable<WriteModel<AggregateRoot>> CreateInsertActions(IEnumerable<AggregateRoot> createdEntities) =>
-			createdEntities
-				.Select(x => new InsertOneModel<AggregateRoot>(x));
+		private WriteModel<AggregateRoot> CreateInsertAction(AggregateRoot createdEntity) =>
+			new InsertOneModel<AggregateRoot>(createdEntity);
 
-		private IEnumerable<WriteModel<AggregateRoot>> CreateReplaceActions(IEnumerable<AggregateRoot> updatedEntities)
-		{
-			FilterDefinitionBuilder<AggregateRoot> filterBuilder = Builders<AggregateRoot>.Filter;
-			return updatedEntities
-				.Select(entity => new ReplaceOneModel<AggregateRoot>(
-					filter: filterBuilder.Where(x => x.Id == entity.Id),
-					replacement: entity));
-		}
+		private WriteModel<AggregateRoot> CreateReplaceAction(
+			AggregateRoot updatedEntity,
+			FilterDefinitionBuilder<AggregateRoot> filterBuilder)
+			=>
+				new ReplaceOneModel<AggregateRoot>(
+					filter: filterBuilder.Where(x => x.Id == updatedEntity.Id),
+					replacement: updatedEntity);
 
-		private IEnumerable<WriteModel<AggregateRoot>> CreateDeleteActions(IEnumerable<AggregateRoot> updatedEntities)
-		{
-			FilterDefinitionBuilder<AggregateRoot> filterBuilder = Builders<AggregateRoot>.Filter;
-			return updatedEntities
-				.Select(entity => new DeleteOneModel<AggregateRoot>(filterBuilder.Where(x => x.Id == entity.Id)));
-		}
+		private WriteModel<AggregateRoot> CreateDeleteAction(
+			AggregateRoot deletedEntity,
+			FilterDefinitionBuilder<AggregateRoot> filterBuilder)
+			=>
+				new DeleteOneModel<AggregateRoot>(filterBuilder.Where(x => x.Id == deletedEntity.Id));
 
 		private void UpdateEntityEntryStatesAfterSave()
 		{
