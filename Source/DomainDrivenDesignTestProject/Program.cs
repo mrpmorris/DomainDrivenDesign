@@ -23,6 +23,8 @@ namespace DomainDriveDesignTestProject
 				mongoTotal += Time("MongoDB", SaveDataToMongoDB);
 				efTotal += Time("EFCore", SaveDataToEFCore);
 			}
+			Console.WriteLine();
+			Console.WriteLine("Totals");
 			Console.WriteLine("==========");
 			Console.WriteLine("MongoDB total = " + mongoTotal);
 			Console.WriteLine("EFCore total = " + efTotal);
@@ -57,7 +59,7 @@ namespace DomainDriveDesignTestProject
 			var options = new DatabaseContextOptions<DomainDriveDesignTestProject.Mongo.ApplicationDbContext>()
 			{
 				ConnectionString = "mongodb://localhost:30001",
-				DatabaseName = "SwitchStream"
+				DatabaseName = "DomainDrivenMongo"
 			};
 			var db = new Mongo.ApplicationDbContext(options);
 
