@@ -16,16 +16,10 @@ namespace DomainDriveDesignTestProject.EFCore
 		{
 			base.OnModelCreating(modelBuilder);
 			modelBuilder.Entity<IncomingFileTransaction>()
-				.ToTable("Test_IncomingFileTransaction")
 				.HasMany(x => x.Infos);
 
 			modelBuilder.Entity<IncomingFileTransaction>()
 				.HasMany(x => x.Events);
-
-			modelBuilder.Entity<IncomingFileTransactionInfo>()
-				.ToTable("Test_IncomingFileTransactionInfo");
-			modelBuilder.Entity<IncomingFileTransactionEvent>()
-				.ToTable("Test_IncomingFileTransactionEvent");
 		}
 	}
 
