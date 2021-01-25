@@ -9,7 +9,6 @@ namespace DomainDriveDesignTestProject.EFCore
 
 		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 		{
-			base.OnConfiguring(optionsBuilder);
 			optionsBuilder.UseSqlServer("Server=.\\Dev;Database=BenchmarkEFCore;Trusted_Connection=True;");
 		}
 
@@ -17,10 +16,24 @@ namespace DomainDriveDesignTestProject.EFCore
 		{
 			base.OnModelCreating(modelBuilder);
 			modelBuilder.Entity<IncomingFileTransaction>()
+				.ToTable("Test_IncomingFileTransaction")
 				.HasMany(x => x.Infos);
 
 			modelBuilder.Entity<IncomingFileTransaction>()
 				.HasMany(x => x.Events);
+
+			modelBuilder.Entity<IncomingFileTransactionInfo>()
+				.ToTable("Test_IncomingFileTransactionInfo");
+			modelBuilder.Entity<IncomingFileTransactionEvent>()
+				.ToTable("Test_IncomingFileTransactionEvent");
+		}
+	}
+
+	public class InMemoryApplicationDbContext : ApplicationDbContext
+	{
+		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+		{
+			optionsBuilder.UseInMemoryDatabase("X");
 		}
 	}
 }
