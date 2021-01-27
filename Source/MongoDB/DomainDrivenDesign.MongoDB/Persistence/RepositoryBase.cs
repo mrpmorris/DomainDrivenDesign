@@ -21,25 +21,21 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 		public void AddOrUpdate(TEntity entity)
 		{
+			DbContext.AddOrUpdate(GetCollectionName(), entity);
 		}
 
 		public void Delete(TEntity entity)
 		{
+			DbContext.Delete(GetCollectionName(), entity);
 		}
 
-		public Task<TEntity> GetAsync(ObjectId id)
-		{
-			throw new NotImplementedException();
-		}
+		public Task<TEntity?> GetAsync(ObjectId id) =>
+			DbContext.GetAsync<TEntity>(GetCollectionName(), id);
 
-		public Task<TEntity[]> GetManyAsync(IEnumerable<ObjectId> ids)
-		{
-			throw new NotImplementedException();
-		}
+		public Task<TEntity[]> GetManyAsync(IEnumerable<ObjectId> ids) =>
+			DbContext.GetManyAsync<TEntity>(GetCollectionName(), ids);
 
-		public IQueryable<TEntity> Query()
-		{
-			throw new NotImplementedException();
-		}
+		public IQueryable<TEntity> Query() =>
+			DbContext.GetQueryable<TEntity>(GetCollectionName());
 	}
 }

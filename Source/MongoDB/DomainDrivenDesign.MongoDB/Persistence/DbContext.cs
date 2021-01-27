@@ -33,7 +33,12 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			return new EntityEntry(collectionName, entity, EntityState.Unknown);
 		}
 
-		public void AddOrUpdate<TEntity>(string collectionName, TEntity entity)
+		internal IQueryable<TEntity> GetQueryable<TEntity>(string collectionName)
+			where TEntity : AggregateRoot
+		=>
+			MongoDatabase.GetCollection<TEntity>(collectionName).AsQueryable();
+
+		internal void AddOrUpdate<TEntity>(string collectionName, TEntity entity)
 			where TEntity: AggregateRoot
 		{
 			if (entity.Id == default(ObjectId))
@@ -54,7 +59,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				});
 		}
 
-		public void Delete<TEntity>(string collectionName, TEntity entity)
+		internal void Delete<TEntity>(string collectionName, TEntity entity)
 			where TEntity: AggregateRoot
 		{
 			if (entity.Id == default(ObjectId))
@@ -67,7 +72,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			EntityEntryLookup[key] = new EntityEntry(collectionName, entity, EntityState.Deleted);
 		}
 
-		public async Task SaveChangesAsync()
+		internal async Task SaveChangesAsync()
 		{
 			if (Interlocked.Increment(ref IsLocked) != 1)
 				throw new InvalidOperationException($"Cannot call {nameof(SaveChangesAsync)} from multiple threads");
@@ -97,7 +102,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			}
 		}
 
-		public async Task<TEntity?> GetAsync<TEntity>(string collectionName, ObjectId id)
+		internal async Task<TEntity?> GetAsync<TEntity>(string collectionName, ObjectId id)
 			where TEntity: AggregateRoot
 		{
 			var key = new CollectionNameAndEntityId(collectionName, id);
@@ -119,6 +124,17 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				EntityEntryLookup[key] = new EntityEntry(collectionName, retrievedEntity, EntityState.Unmodified);
 
 			return retrievedEntity;
+		}
+
+		internal Task<TEntity[]> GetManyAsync<TEntity>(
+			string collectionName,
+			IEnumerable<ObjectId> ids)
+			where TEntity : AggregateRoot
+		{
+			if (!ids.Any())
+				return Task.FromResult(Array.Empty<TEntity>());
+
+			throw new NotImplementedException();
 		}
 
 

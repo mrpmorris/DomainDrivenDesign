@@ -26,6 +26,8 @@ namespace DomainDrivenDesignTestProject
 			var newObject = new IncomingFileTransaction();
 			Repository.AddOrUpdate(newObject);
 			await UnitOfWork.SaveChangesAsync().ConfigureAwait(false);
+			var retrievedObject = await Repository.GetAsync(newObject.Id).ConfigureAwait(false);
+			Console.WriteLine("Same == " + (newObject == retrievedObject));
 		}
 
 		public static void CreateAndRun()
