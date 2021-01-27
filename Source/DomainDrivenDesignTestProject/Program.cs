@@ -86,8 +86,6 @@ namespace DomainDriveDesignTestProject
 
 		static void SaveDataToMongoDB()
 		{
-			const string collectionName = Mongo.ApplicationDbContext.CollectionNames.IncomingFileTransaction;
-
 			var data = Enumerable.Range(1, 1000).Select(x => new Mongo.DomainClasses.IncomingFileTransaction());
 
 			var options = new DbContextOptions<DomainDriveDesignTestProject.Mongo.ApplicationDbContext>()
@@ -96,10 +94,13 @@ namespace DomainDriveDesignTestProject
 				DatabaseName = "DomainDrivenMongo"
 			};
 			var db = new Mongo.ApplicationDbContext(options);
+			var repo = new DomainDrivenDesignTestProject.Mongo.Repositories.IncomingFileTransactionRepository(db);
 
 			foreach (Mongo.DomainClasses.IncomingFileTransaction ift in data)
-				db.AddOrUpdate(collectionName, ift);
-			db.SaveChangesAsync().Wait();
+				repo.AddOrUpdate(ift);
+
+			IUnitOfWork uow = new UnitOfWork(db);
+			uow.SaveChangesAsync().Wait();
 		}
 	}
 }
