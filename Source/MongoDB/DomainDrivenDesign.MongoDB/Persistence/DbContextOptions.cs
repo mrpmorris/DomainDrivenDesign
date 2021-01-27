@@ -1,13 +1,13 @@
 ﻿namespace DomainDrivenDesign.MongoDB.Persistence
 {
-	public abstract class DatabaseContextOptions
+	public abstract class DbContextOptions
 	{
 		public string? ConnectionString { get; set; }
 		public string? DatabaseName { get; set; }
 	}
 
-	public class DatabaseContextOptions<TDatabase> : DatabaseContextOptions
-		where TDatabase: DatabaseContext
+	public class DbContextOptions<TDatabase> : DbContextOptions
+		where TDatabase: DbContext
 	{
 	}
 }

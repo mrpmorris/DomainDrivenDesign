@@ -90,7 +90,7 @@ namespace DomainDriveDesignTestProject
 
 			var data = Enumerable.Range(1, 1000).Select(x => new Mongo.DomainClasses.IncomingFileTransaction());
 
-			var options = new DatabaseContextOptions<DomainDriveDesignTestProject.Mongo.ApplicationDbContext>()
+			var options = new DbContextOptions<DomainDriveDesignTestProject.Mongo.ApplicationDbContext>()
 			{
 				ConnectionString = "mongodb://localhost:27017",
 				DatabaseName = "DomainDrivenMongo"

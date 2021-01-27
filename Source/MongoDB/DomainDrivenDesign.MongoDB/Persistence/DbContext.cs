@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
-	public abstract partial class DatabaseContext
+	public abstract partial class DbContext
 	{
 		protected readonly IMongoClient MongoClient;
 		protected readonly IMongoDatabase MongoDatabase;
@@ -18,7 +18,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 		private int IsLocked;
 
-		public DatabaseContext(DatabaseContextOptions options)
+		public DbContext(DbContextOptions options)
 		{
 			MongoClient = CreateMongoClient(options);
 			MongoDatabase = CreateMongoDatabase(options);
@@ -130,7 +130,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		{
 		}
 
-		private MongoClient CreateMongoClient(DatabaseContextOptions options)
+		private MongoClient CreateMongoClient(DbContextOptions options)
 		{
 			if (options.ConnectionString is null)
 				throw new NullReferenceException($"{nameof(options)}.{nameof(options.ConnectionString)} cannot be null");
@@ -141,7 +141,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			return new MongoClient(mongoClientSettings);
 		}
 
-		private IMongoDatabase CreateMongoDatabase(DatabaseContextOptions options)
+		private IMongoDatabase CreateMongoDatabase(DbContextOptions options)
 		{
 			if (options.DatabaseName is null)
 				throw new NullReferenceException($"{nameof(options)}.{nameof(options.DatabaseName)} cannot be null");

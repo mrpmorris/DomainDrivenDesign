@@ -12,6 +12,12 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		where TEntity : AggregateRoot
 	{
 		protected abstract string GetCollectionName();
+		protected readonly DbContext DbContext;
+
+		protected RepositoryBase(DbContext dbContext)
+		{
+			DbContext = dbContext;
+		}
 
 		public void AddOrUpdate(TEntity entity)
 		{

@@ -2,9 +2,9 @@
 
 namespace DomainDriveDesignTestProject.Mongo
 {
-	public class ApplicationDbContext : DatabaseContext
+	public class ApplicationDbContext : DbContext
 	{
-		public ApplicationDbContext(DatabaseContextOptions<ApplicationDbContext> options)
+		public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
 			: base(options)
 		{
 		}
