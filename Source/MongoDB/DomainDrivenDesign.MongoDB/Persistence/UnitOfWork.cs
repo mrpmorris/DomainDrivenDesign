@@ -1,18 +1,19 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
-	public interface IUnitOfWork
+	public interface IUnitOfWork<TDbContext>
+		where TDbContext: DbContext
 	{
 		Task SaveChangesAsync();
 	}
 
-	public class UnitOfWork : IUnitOfWork
+	public class UnitOfWork<TDbContext> : IUnitOfWork<TDbContext>
+		where TDbContext: DbContext
 	{
-		protected readonly DbContext DbContext;
+		protected readonly TDbContext DbContext;
 
-		public UnitOfWork(DbContext dbContext)
+		public UnitOfWork(TDbContext dbContext)
 		{
 			DbContext = dbContext;
 		}

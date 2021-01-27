@@ -23,7 +23,7 @@ namespace DomainDrivenDesignTestProject
 						break;
 
 					case "R":
-						SampleApp.Run();
+						SampleApp.CreateAndRun();
 						break;
 
 					case "X":

@@ -7,13 +7,14 @@ using System.Threading.Tasks;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
-	public abstract class RepositoryBase<TEntity>
+	public abstract class RepositoryBase<TDbContext, TEntity>
+		where TDbContext : DbContext
 		where TEntity : AggregateRoot
 	{
 		protected abstract string GetCollectionName();
-		protected readonly DbContext DbContext;
+		protected readonly TDbContext DbContext;
 
-		protected RepositoryBase(DbContext dbContext)
+		protected RepositoryBase(TDbContext dbContext)
 		{
 			DbContext = dbContext;
 		}
