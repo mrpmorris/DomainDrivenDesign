@@ -13,8 +13,8 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 		public EntityEntry(string collectionName, AggregateRoot entity, EntityState state)
 		{
-			Entity = entity;
 			CollectionName = collectionName;
+			Entity = entity;
 			State = state;
 		}
 
