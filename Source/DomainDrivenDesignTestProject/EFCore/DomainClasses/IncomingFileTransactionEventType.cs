@@ -1,4 +1,4 @@
-﻿namespace DomainDriveDesignTestProject.EFCore.DomainClasses
+﻿namespace DomainDrivenDesignTestProject.EFCore.DomainClasses
 {
 	public enum IncomingFileTransactionEventType
 	{

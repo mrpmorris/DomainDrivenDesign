@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using System;
 
-namespace DomainDriveDesignTestProject.Mongo.DomainClasses
+namespace DomainDrivenDesignTestProject.Mongo.DomainClasses
 {
 	public class IncomingFileTransactionInfo
 	{

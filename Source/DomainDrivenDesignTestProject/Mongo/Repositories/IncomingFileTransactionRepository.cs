@@ -1,4 +1,4 @@
-﻿using DomainDriveDesignTestProject.Mongo.DomainClasses;
+﻿using DomainDrivenDesignTestProject.Mongo.DomainClasses;
 using DomainDrivenDesign.MongoDB.Persistence;
 
 namespace DomainDrivenDesignTestProject.Mongo.Repositories

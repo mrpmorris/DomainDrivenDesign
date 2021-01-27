@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using DomainDriveDesignTestProject.EFCore.DomainClasses;
+using DomainDrivenDesignTestProject.EFCore.DomainClasses;
 
-namespace DomainDriveDesignTestProject.EFCore
+namespace DomainDrivenDesignTestProject.EFCore
 {
 	public class ApplicationDbContext : DbContext
 	{

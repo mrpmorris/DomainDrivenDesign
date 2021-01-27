@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DomainDriveDesignTestProject.EFCore.DomainClasses
+namespace DomainDrivenDesignTestProject.EFCore.DomainClasses
 {
 	public class IncomingFileTransactionInfo
 	{

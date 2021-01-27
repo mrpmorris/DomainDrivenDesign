@@ -1,6 +1,6 @@
 ﻿using DomainDrivenDesign.MongoDB.Persistence;
 
-namespace DomainDriveDesignTestProject.Mongo
+namespace DomainDrivenDesignTestProject.Mongo
 {
 	public class ApplicationDbContext : DbContext
 	{

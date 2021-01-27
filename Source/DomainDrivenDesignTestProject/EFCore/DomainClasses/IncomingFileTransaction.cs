@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DomainDriveDesignTestProject.EFCore.DomainClasses
+namespace DomainDrivenDesignTestProject.EFCore.DomainClasses
 {
 	public class IncomingFileTransaction : AggregateRoot
 	{

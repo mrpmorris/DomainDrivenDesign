@@ -17,9 +17,6 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			DbContext = dbContext;
 		}
 
-		public Task SaveChangesAsync()
-		{
-			throw new NotImplementedException();
-		}
+		public Task SaveChangesAsync() => DbContext.SaveChangesAsync();
 	}
 }
