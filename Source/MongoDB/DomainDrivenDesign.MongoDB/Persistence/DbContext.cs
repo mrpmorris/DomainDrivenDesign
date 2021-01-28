@@ -38,10 +38,19 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		=>
 			MongoDatabase.GetCollection<TEntity>(collectionName).AsQueryable();
 
-		internal void AddOrUpdate<TEntity>(string collectionName, TEntity entity)
-			where TEntity: AggregateRoot
+		internal void Attach<TEntity>(string collectionName, TEntity entity)
+			where TEntity : AggregateRoot
 		{
-			if (entity.Id == default(ObjectId))
+			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
+			_ = EntityEntryLookup.GetOrAdd(
+				key: key,
+				valueFactory: _ => new EntityEntry(collectionName, entity, EntityState.Unmodified));
+		}
+
+		internal void AddOrUpdate<TEntity>(string collectionName, TEntity entity)
+			where TEntity : AggregateRoot
+		{
+			if (entity.Id == default)
 				throw new ArgumentException("Id has not been set", nameof(entity));
 
 			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
@@ -60,7 +69,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		}
 
 		internal void Delete<TEntity>(string collectionName, TEntity entity)
-			where TEntity: AggregateRoot
+			where TEntity : AggregateRoot
 		{
 			if (entity.Id == default(ObjectId))
 				throw new ArgumentException("Id has not been set", nameof(entity));
@@ -103,7 +112,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		}
 
 		internal async Task<TEntity?> GetAsync<TEntity>(string collectionName, ObjectId id)
-			where TEntity: AggregateRoot
+			where TEntity : AggregateRoot
 		{
 			var key = new CollectionNameAndEntityId(collectionName, id);
 			if (EntityEntryLookup.TryGetValue(key, out EntityEntry entry))
@@ -237,7 +246,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		private void UpdateEntityEntryStatesAfterSave()
 		{
 			var entityEntryLookupKeysAndValues = EntityEntryLookup.Select(x => x).ToArray();
-			foreach(var kvp in entityEntryLookupKeysAndValues)
+			foreach (var kvp in entityEntryLookupKeysAndValues)
 			{
 				switch (kvp.Value.State)
 				{

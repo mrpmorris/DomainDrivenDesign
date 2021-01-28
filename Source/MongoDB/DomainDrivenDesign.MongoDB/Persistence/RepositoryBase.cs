@@ -32,9 +32,6 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		public Task<TEntity?> GetAsync(ObjectId id) =>
 			DbContext.GetAsync<TEntity>(GetCollectionName(), id);
 
-		public Task<TEntity[]> GetManyAsync(IEnumerable<ObjectId> ids) =>
-			DbContext.GetManyAsync<TEntity>(GetCollectionName(), ids);
-
 		public IQueryable<TEntity> Query() =>
 			DbContext.GetQueryable<TEntity>(GetCollectionName());
 	}
