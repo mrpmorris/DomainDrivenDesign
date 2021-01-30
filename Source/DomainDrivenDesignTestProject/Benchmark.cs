@@ -1,4 +1,5 @@
 ﻿using DomainDrivenDesign.MongoDB.Persistence;
+using DomainDrivenDesign.MongoDB.Validation;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -101,7 +102,9 @@ namespace DomainDrivenDesignTestProject
 			foreach (Mongo.DomainClasses.IncomingFileTransaction ift in data)
 				repo.AddOrUpdate(ift);
 
-			IUnitOfWork<Mongo.ApplicationDbContext> uow = new UnitOfWork<Mongo.ApplicationDbContext>(db);
+			IUnitOfWork<Mongo.ApplicationDbContext> uow =
+				new UnitOfWork<Mongo.ApplicationDbContext>(db, new NullValidationService());
+
 			uow.SaveChangesAsync().Wait();
 		}
 	}

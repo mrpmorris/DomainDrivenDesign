@@ -34,6 +34,8 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			return new EntityEntry(collectionName, entity, EntityState.Unknown, entity.ConcurrencyVersion);
 		}
 
+		internal EntityEntry[] GetEntries() => EntityEntryLookup.Values.ToArray();
+
 		internal IQueryable<TEntity> GetQueryable<TEntity>(string collectionName)
 			where TEntity : AggregateRoot
 		=>

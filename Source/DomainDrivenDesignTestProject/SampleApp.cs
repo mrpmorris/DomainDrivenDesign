@@ -1,4 +1,5 @@
 ﻿using DomainDrivenDesign.MongoDB.Persistence;
+using DomainDrivenDesign.MongoDB.Validation;
 using DomainDrivenDesignTestProject.Mongo;
 using DomainDrivenDesignTestProject.Mongo.DomainClasses;
 using DomainDrivenDesignTestProject.Mongo.Repositories;
@@ -46,6 +47,7 @@ namespace DomainDrivenDesignTestProject
 			services.AddScoped<ApplicationDbContext>();
 			services.AddScoped<IUnitOfWork<ApplicationDbContext>, UnitOfWork<ApplicationDbContext>>();
 			services.AddScoped<IIncomingFileTransactionRepository, IncomingFileTransactionRepository>();
+			services.AddScoped<IValidationService, NullValidationService>();
 
 			IServiceProvider sp = services.BuildServiceProvider();
 			var instance = sp.GetService<SampleApp>();
