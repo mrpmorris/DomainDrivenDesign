@@ -33,6 +33,13 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			return new EntityEntry(collectionName, entity, EntityState.Unknown);
 		}
 
+		public DbSet<TEntity> CreateDbSet<TEntity>(string collectionName)
+			where TEntity : AggregateRoot
+		{
+			var dbSet = new DbSet<TEntity>(MongoDatabase, collectionName);
+			return dbSet;
+		}
+
 		internal IQueryable<TEntity> GetQueryable<TEntity>(string collectionName)
 			where TEntity : AggregateRoot
 		=>
