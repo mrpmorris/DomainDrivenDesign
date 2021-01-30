@@ -4,6 +4,7 @@ using DomainDrivenDesignTestProject.Mongo.DomainClasses;
 using DomainDrivenDesignTestProject.Mongo.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DomainDrivenDesignTestProject
@@ -26,8 +27,12 @@ namespace DomainDrivenDesignTestProject
 			var newObject = new IncomingFileTransaction();
 			Repository.AddOrUpdate(newObject);
 			await UnitOfWork.SaveChangesAsync().ConfigureAwait(false);
-			var retrievedObject = await Repository.GetAsync(newObject.Id).ConfigureAwait(false);
-			Console.WriteLine("Same == " + (newObject == retrievedObject));
+			var retrievedObject1 = await Repository.GetAsync(newObject.Id).ConfigureAwait(false);
+			Console.WriteLine("Same == " + (newObject == retrievedObject1));
+
+			retrievedObject1.ConcurrencyVersion = 999;
+			Repository.AddOrUpdate(retrievedObject1);
+			await UnitOfWork.SaveChangesAsync().ConfigureAwait(false);
 		}
 
 		public static void CreateAndRun()

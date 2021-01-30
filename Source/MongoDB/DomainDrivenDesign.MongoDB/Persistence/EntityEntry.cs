@@ -8,14 +8,20 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		public string CollectionName { get; }
 		public AggregateRoot Entity { get; }
 		public EntityState State { get; }
+		public int OriginalEntityConcurrencyVersion { get; }
 
 		private int? CachedHashCode;
 
-		public EntityEntry(string collectionName, AggregateRoot entity, EntityState state)
+		public EntityEntry(
+			string collectionName,
+			AggregateRoot entity,
+			EntityState state,
+			int originalEntityConcurrencyVersion)
 		{
 			CollectionName = collectionName;
 			Entity = entity;
 			State = state;
+			OriginalEntityConcurrencyVersion = originalEntityConcurrencyVersion;
 		}
 
 		public static bool operator ==(EntityEntry a, EntityEntry b) => a.Equals(b);
