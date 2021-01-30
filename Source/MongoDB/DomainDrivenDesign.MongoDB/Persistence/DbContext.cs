@@ -12,16 +12,17 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	public abstract partial class DbContext
 	{
-		protected readonly IMongoClient MongoClient;
-		protected readonly IMongoDatabase MongoDatabase;
-		protected readonly ConcurrentDictionary<CollectionNameAndEntityId, EntityEntry> EntityEntryLookup;
-
 		private int IsLocked;
+		private readonly IMongoClient MongoClient;
+		private readonly IMongoDatabase MongoDatabase;
+		private readonly ConcurrentDictionary<string, IDbSet> DbSetLookup;
+		private readonly ConcurrentDictionary<CollectionNameAndEntityId, EntityEntry> EntityEntryLookup;
 
 		public DbContext(DbContextOptions options)
 		{
 			MongoClient = CreateMongoClient(options);
 			MongoDatabase = CreateMongoDatabase(options);
+			DbSetLookup = new ConcurrentDictionary<string, IDbSet>(StringComparer.Ordinal);
 			EntityEntryLookup = new ConcurrentDictionary<CollectionNameAndEntityId, EntityEntry>();
 		}
 
@@ -31,13 +32,6 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			if (EntityEntryLookup.TryGetValue(key, out EntityEntry entry))
 				return entry;
 			return new EntityEntry(collectionName, entity, EntityState.Unknown);
-		}
-
-		public DbSet<TEntity> CreateDbSet<TEntity>(string collectionName)
-			where TEntity : AggregateRoot
-		{
-			var dbSet = new DbSet<TEntity>(MongoDatabase, collectionName);
-			return dbSet;
 		}
 
 		internal IQueryable<TEntity> GetQueryable<TEntity>(string collectionName)
@@ -153,6 +147,18 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			throw new NotImplementedException();
 		}
 
+
+		protected DbSet<TEntity> CreateDbSet<TEntity>(string collectionName)
+			where TEntity : AggregateRoot
+		{
+			var dbSet = new DbSet<TEntity>(MongoDatabase, collectionName);
+			_ = DbSetLookup.AddOrUpdate(
+				key: collectionName,
+				addValueFactory: _ => dbSet,
+				updateValueFactory: (_, _) =>
+					throw new ArgumentException($"Duplicate collection name {collectionName}", nameof(collectionName)));
+			return dbSet;
+		}
 
 		protected virtual void ConfigureMongoClientSettings(MongoClientSettings mongoClientSettings)
 		{
@@ -277,5 +283,6 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				}
 			}
 		}
+
 	}
 }

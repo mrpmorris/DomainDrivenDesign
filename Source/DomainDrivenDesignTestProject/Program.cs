@@ -12,7 +12,7 @@ namespace DomainDrivenDesignTestProject
 			{
 				Console.Clear();
 				Console.WriteLine("B: Benchmark");
-				Console.WriteLine("R: Run sample");
+				Console.WriteLine("S: Run sample");
 				Console.WriteLine("X: Exit");
 				string choice = Console.ReadLine().ToUpperInvariant();
 				Console.WriteLine();
@@ -22,7 +22,7 @@ namespace DomainDrivenDesignTestProject
 						Benchmark.Run();
 						break;
 
-					case "R":
+					case "S":
 						SampleApp.CreateAndRun();
 						break;
 

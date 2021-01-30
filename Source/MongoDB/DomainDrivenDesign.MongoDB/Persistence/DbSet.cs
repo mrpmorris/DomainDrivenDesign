@@ -7,7 +7,12 @@ using System.Threading.Tasks;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
-	public class DbSet<TEntity>
+	internal interface IDbSet
+	{
+		Task SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries);
+	}
+
+	public class DbSet<TEntity> : IDbSet
 		where TEntity : AggregateRoot
 	{
 		private readonly IMongoCollection<TEntity> Collection;
@@ -17,7 +22,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			Collection = mongoDatabase.GetCollection<TEntity>(collectionName);
 		}
 
-		internal async Task SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries)
+		async Task IDbSet.SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries)
 		{
 			if (!entityEntries.Any())
 				return;
