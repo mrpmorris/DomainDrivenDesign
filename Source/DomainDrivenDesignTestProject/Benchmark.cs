@@ -90,18 +90,18 @@ namespace DomainDrivenDesignTestProject
 		{
 			var data = Enumerable.Range(1, NumberOfParentObjects).Select(x => new Mongo.DomainClasses.IncomingFileTransaction());
 
-			var options = new DbContextOptions<DomainDrivenDesignTestProject.Mongo.ApplicationDbContext>()
+			var options = new DbContextOptions<Mongo.ApplicationDbContext>()
 			{
 				ConnectionString = "mongodb://localhost:27017",
 				DatabaseName = "DomainDrivenMongo"
 			};
 			var db = new Mongo.ApplicationDbContext(options);
-			var repo = new DomainDrivenDesignTestProject.Mongo.Repositories.IncomingFileTransactionRepository(db);
+			var repo = new Mongo.Repositories.IncomingFileTransactionRepository(db);
 
 			foreach (Mongo.DomainClasses.IncomingFileTransaction ift in data)
 				repo.AddOrUpdate(ift);
 
-			IUnitOfWork uow = new UnitOfWork(db);
+			IUnitOfWork<Mongo.ApplicationDbContext> uow = new UnitOfWork<Mongo.ApplicationDbContext>(db);
 			uow.SaveChangesAsync().Wait();
 		}
 	}

@@ -7,38 +7,32 @@ using System.Threading.Tasks;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
-	public abstract class RepositoryBase<TEntity>
+	public abstract class RepositoryBase<TDbContext, TEntity>
+		where TDbContext : DbContext
 		where TEntity : AggregateRoot
 	{
 		protected abstract string GetCollectionName();
-		protected readonly DbContext DbContext;
+		protected readonly TDbContext DbContext;
 
-		protected RepositoryBase(DbContext dbContext)
+		protected RepositoryBase(TDbContext dbContext)
 		{
 			DbContext = dbContext;
 		}
 
 		public void AddOrUpdate(TEntity entity)
 		{
+			DbContext.AddOrUpdate(GetCollectionName(), entity);
 		}
 
 		public void Delete(TEntity entity)
 		{
+			DbContext.Delete(GetCollectionName(), entity);
 		}
 
-		public Task<TEntity> GetAsync(ObjectId id)
-		{
-			throw new NotImplementedException();
-		}
+		public Task<TEntity?> GetAsync(ObjectId id) =>
+			DbContext.GetAsync<TEntity>(GetCollectionName(), id);
 
-		public Task<TEntity[]> GetManyAsync(IEnumerable<ObjectId> ids)
-		{
-			throw new NotImplementedException();
-		}
-
-		public IQueryable<TEntity> Query()
-		{
-			throw new NotImplementedException();
-		}
+		public IQueryable<TEntity> Query() =>
+			DbContext.GetQueryable<TEntity>(GetCollectionName());
 	}
 }

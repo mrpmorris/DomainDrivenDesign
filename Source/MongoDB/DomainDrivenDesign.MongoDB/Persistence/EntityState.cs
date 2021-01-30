@@ -6,6 +6,7 @@
 		Modified,
 		Unmodified,
 		Deleted,
+		//TODO: Remove Unknown, use NULL instead
 		Unknown
 	}
 }

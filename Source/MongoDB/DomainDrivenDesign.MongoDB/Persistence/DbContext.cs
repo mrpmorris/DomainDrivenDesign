@@ -12,16 +12,17 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	public abstract partial class DbContext
 	{
-		protected readonly IMongoClient MongoClient;
-		protected readonly IMongoDatabase MongoDatabase;
-		protected readonly ConcurrentDictionary<CollectionNameAndEntityId, EntityEntry> EntityEntryLookup;
-
-		private int IsLocked;
+		private int IsSaving;
+		private readonly IMongoClient MongoClient;
+		private readonly IMongoDatabase MongoDatabase;
+		private readonly ConcurrentDictionary<string, IDbSet> DbSetLookup;
+		private readonly ConcurrentDictionary<CollectionNameAndEntityId, EntityEntry> EntityEntryLookup;
 
 		public DbContext(DbContextOptions options)
 		{
 			MongoClient = CreateMongoClient(options);
 			MongoDatabase = CreateMongoDatabase(options);
+			DbSetLookup = new ConcurrentDictionary<string, IDbSet>(StringComparer.Ordinal);
 			EntityEntryLookup = new ConcurrentDictionary<CollectionNameAndEntityId, EntityEntry>();
 		}
 
@@ -33,10 +34,24 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			return new EntityEntry(collectionName, entity, EntityState.Unknown);
 		}
 
-		public void AddOrUpdate<TEntity>(string collectionName, TEntity entity)
-			where TEntity: AggregateRoot
+		internal IQueryable<TEntity> GetQueryable<TEntity>(string collectionName)
+			where TEntity : AggregateRoot
+		=>
+			MongoDatabase.GetCollection<TEntity>(collectionName).AsQueryable();
+
+		internal void Attach<TEntity>(string collectionName, TEntity entity)
+			where TEntity : AggregateRoot
 		{
-			if (entity.Id == default(ObjectId))
+			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
+			_ = EntityEntryLookup.GetOrAdd(
+				key: key,
+				valueFactory: _ => new EntityEntry(collectionName, entity, EntityState.Unmodified));
+		}
+
+		internal void AddOrUpdate<TEntity>(string collectionName, TEntity entity)
+			where TEntity : AggregateRoot
+		{
+			if (entity.Id == default)
 				throw new ArgumentException("Id has not been set", nameof(entity));
 
 			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
@@ -54,8 +69,8 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				});
 		}
 
-		public void Delete<TEntity>(string collectionName, TEntity entity)
-			where TEntity: AggregateRoot
+		internal void Delete<TEntity>(string collectionName, TEntity entity)
+			where TEntity : AggregateRoot
 		{
 			if (entity.Id == default(ObjectId))
 				throw new ArgumentException("Id has not been set", nameof(entity));
@@ -67,9 +82,9 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			EntityEntryLookup[key] = new EntityEntry(collectionName, entity, EntityState.Deleted);
 		}
 
-		public async Task SaveChangesAsync()
+		internal async Task SaveChangesAsync()
 		{
-			if (Interlocked.Increment(ref IsLocked) != 1)
+			if (Interlocked.Increment(ref IsSaving) != 1)
 				throw new InvalidOperationException($"Cannot call {nameof(SaveChangesAsync)} from multiple threads");
 			var collectionNameToChangesLookup = EntityEntryLookup
 				.Select(x => x.Value)
@@ -79,10 +94,15 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			//TODO: Start transaction
 			try
 			{
+				var saveChangesTasks = new List<Task>();
 				foreach (KeyValuePair<string, IEnumerable<EntityEntry>> changesWithinCollection in collectionNameToChangesLookup)
 				{
-					await SaveCollectionChangesAsync(changesWithinCollection.Value).ConfigureAwait(false);
+					if (!DbSetLookup.TryGetValue(changesWithinCollection.Key, out IDbSet dbSet))
+						throw new KeyNotFoundException($"DbSet has not been created {changesWithinCollection.Key}");
+					var saveChangesTast = dbSet.SaveCollectionChangesAsync(changesWithinCollection.Value);
+					saveChangesTasks.Add(saveChangesTast);
 				}
+				await Task.WhenAll(saveChangesTasks).ConfigureAwait(false);
 				//TODO: Commit transaction
 				UpdateEntityEntryStatesAfterSave();
 			}
@@ -93,12 +113,12 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			}
 			finally
 			{
-				Interlocked.Decrement(ref IsLocked);
+				Interlocked.Decrement(ref IsSaving);
 			}
 		}
 
-		public async Task<TEntity?> GetAsync<TEntity>(string collectionName, ObjectId id)
-			where TEntity: AggregateRoot
+		internal async Task<TEntity?> GetAsync<TEntity>(string collectionName, ObjectId id)
+			where TEntity : AggregateRoot
 		{
 			var key = new CollectionNameAndEntityId(collectionName, id);
 			if (EntityEntryLookup.TryGetValue(key, out EntityEntry entry))
@@ -121,6 +141,29 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			return retrievedEntity;
 		}
 
+		internal Task<TEntity[]> GetManyAsync<TEntity>(
+			string collectionName,
+			IEnumerable<ObjectId> ids)
+			where TEntity : AggregateRoot
+		{
+			if (!ids.Any())
+				return Task.FromResult(Array.Empty<TEntity>());
+
+			throw new NotImplementedException();
+		}
+
+
+		protected DbSet<TEntity> CreateDbSet<TEntity>(string collectionName)
+			where TEntity : AggregateRoot
+		{
+			var dbSet = new DbSet<TEntity>(MongoDatabase, collectionName);
+			_ = DbSetLookup.AddOrUpdate(
+				key: collectionName,
+				addValueFactory: _ => dbSet,
+				updateValueFactory: (_, _) =>
+					throw new ArgumentException($"Duplicate collection name {collectionName}", nameof(collectionName)));
+			return dbSet;
+		}
 
 		protected virtual void ConfigureMongoClientSettings(MongoClientSettings mongoClientSettings)
 		{
@@ -151,77 +194,10 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			return MongoClient.GetDatabase(name: options.DatabaseName, mongoDatabaseSettings);
 		}
 
-		private async Task SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries)
-		{
-			string collectionName = entityEntries.First().CollectionName;
-
-			int expectedInsertedCount = 0;
-			int expectedModifiedCount = 0;
-			int expectedDeletedCount = 0;
-
-			var updates = new List<WriteModel<AggregateRoot>>();
-			FilterDefinitionBuilder<AggregateRoot> filterBuilder = Builders<AggregateRoot>.Filter;
-			foreach (EntityEntry entityEntry in entityEntries)
-			{
-				switch (entityEntry.State)
-				{
-					case EntityState.Created:
-						expectedInsertedCount++;
-						updates.Add(CreateInsertAction(entityEntry.Entity));
-						break;
-
-					case EntityState.Modified:
-						expectedModifiedCount++;
-						updates.Add(CreateReplaceAction(entityEntry.Entity, filterBuilder));
-						break;
-
-					case EntityState.Deleted:
-						expectedDeletedCount++;
-						updates.Add(CreateDeleteAction(entityEntry.Entity, filterBuilder));
-						break;
-
-					case EntityState.Unmodified:
-						break;
-
-					default:
-						throw new NotImplementedException(entityEntry.State.ToString());
-				}
-			}
-
-			if (!updates.Any())
-				return;
-
-			var collection = MongoDatabase.GetCollection<AggregateRoot>(collectionName);
-			BulkWriteResult<AggregateRoot> result = await collection.BulkWriteAsync(updates).ConfigureAwait(false);
-			if (result.InsertedCount != expectedInsertedCount
-				|| result.ModifiedCount != expectedModifiedCount
-				|| result.DeletedCount != expectedDeletedCount)
-			{
-				throw new PersistenceConflictException();
-			}
-		}
-
-		private WriteModel<AggregateRoot> CreateInsertAction(AggregateRoot createdEntity) =>
-			new InsertOneModel<AggregateRoot>(createdEntity);
-
-		private WriteModel<AggregateRoot> CreateReplaceAction(
-			AggregateRoot updatedEntity,
-			FilterDefinitionBuilder<AggregateRoot> filterBuilder)
-			=>
-				new ReplaceOneModel<AggregateRoot>(
-					filter: filterBuilder.Where(x => x.Id == updatedEntity.Id),
-					replacement: updatedEntity);
-
-		private WriteModel<AggregateRoot> CreateDeleteAction(
-			AggregateRoot deletedEntity,
-			FilterDefinitionBuilder<AggregateRoot> filterBuilder)
-			=>
-				new DeleteOneModel<AggregateRoot>(filterBuilder.Where(x => x.Id == deletedEntity.Id));
-
 		private void UpdateEntityEntryStatesAfterSave()
 		{
 			var entityEntryLookupKeysAndValues = EntityEntryLookup.Select(x => x).ToArray();
-			foreach(var kvp in entityEntryLookupKeysAndValues)
+			foreach (var kvp in entityEntryLookupKeysAndValues)
 			{
 				switch (kvp.Value.State)
 				{
