@@ -12,7 +12,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	public abstract partial class DbContext
 	{
-		private int IsLocked;
+		private int IsSaving;
 		private readonly IMongoClient MongoClient;
 		private readonly IMongoDatabase MongoDatabase;
 		private readonly ConcurrentDictionary<string, IDbSet> DbSetLookup;
@@ -84,7 +84,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 		internal async Task SaveChangesAsync()
 		{
-			if (Interlocked.Increment(ref IsLocked) != 1)
+			if (Interlocked.Increment(ref IsSaving) != 1)
 				throw new InvalidOperationException($"Cannot call {nameof(SaveChangesAsync)} from multiple threads");
 			var collectionNameToChangesLookup = EntityEntryLookup
 				.Select(x => x.Value)
@@ -94,10 +94,15 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			//TODO: Start transaction
 			try
 			{
+				var saveChangesTasks = new List<Task>();
 				foreach (KeyValuePair<string, IEnumerable<EntityEntry>> changesWithinCollection in collectionNameToChangesLookup)
 				{
-					await SaveCollectionChangesAsync(changesWithinCollection.Value).ConfigureAwait(false);
+					if (!DbSetLookup.TryGetValue(changesWithinCollection.Key, out IDbSet dbSet))
+						throw new KeyNotFoundException($"DbSet has not been created {changesWithinCollection.Key}");
+					var saveChangesTast = dbSet.SaveCollectionChangesAsync(changesWithinCollection.Value);
+					saveChangesTasks.Add(saveChangesTast);
 				}
+				await Task.WhenAll(saveChangesTasks).ConfigureAwait(false);
 				//TODO: Commit transaction
 				UpdateEntityEntryStatesAfterSave();
 			}
@@ -108,7 +113,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			}
 			finally
 			{
-				Interlocked.Decrement(ref IsLocked);
+				Interlocked.Decrement(ref IsSaving);
 			}
 		}
 
@@ -189,73 +194,6 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			return MongoClient.GetDatabase(name: options.DatabaseName, mongoDatabaseSettings);
 		}
 
-		private async Task SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries)
-		{
-			string collectionName = entityEntries.First().CollectionName;
-
-			int expectedInsertedCount = 0;
-			int expectedModifiedCount = 0;
-			int expectedDeletedCount = 0;
-
-			var updates = new List<WriteModel<AggregateRoot>>();
-			FilterDefinitionBuilder<AggregateRoot> filterBuilder = Builders<AggregateRoot>.Filter;
-			foreach (EntityEntry entityEntry in entityEntries)
-			{
-				switch (entityEntry.State)
-				{
-					case EntityState.Created:
-						expectedInsertedCount++;
-						updates.Add(CreateInsertAction(entityEntry.Entity));
-						break;
-
-					case EntityState.Modified:
-						expectedModifiedCount++;
-						updates.Add(CreateReplaceAction(entityEntry.Entity, filterBuilder));
-						break;
-
-					case EntityState.Deleted:
-						expectedDeletedCount++;
-						updates.Add(CreateDeleteAction(entityEntry.Entity, filterBuilder));
-						break;
-
-					case EntityState.Unmodified:
-						break;
-
-					default:
-						throw new NotImplementedException(entityEntry.State.ToString());
-				}
-			}
-
-			if (!updates.Any())
-				return;
-
-			var collection = MongoDatabase.GetCollection<AggregateRoot>(collectionName);
-			BulkWriteResult<AggregateRoot> result = await collection.BulkWriteAsync(updates).ConfigureAwait(false);
-			if (result.InsertedCount != expectedInsertedCount
-				|| result.ModifiedCount != expectedModifiedCount
-				|| result.DeletedCount != expectedDeletedCount)
-			{
-				throw new PersistenceConflictException();
-			}
-		}
-
-		private WriteModel<AggregateRoot> CreateInsertAction(AggregateRoot createdEntity) =>
-			new InsertOneModel<AggregateRoot>(createdEntity);
-
-		private WriteModel<AggregateRoot> CreateReplaceAction(
-			AggregateRoot updatedEntity,
-			FilterDefinitionBuilder<AggregateRoot> filterBuilder)
-			=>
-				new ReplaceOneModel<AggregateRoot>(
-					filter: filterBuilder.Where(x => x.Id == updatedEntity.Id),
-					replacement: updatedEntity);
-
-		private WriteModel<AggregateRoot> CreateDeleteAction(
-			AggregateRoot deletedEntity,
-			FilterDefinitionBuilder<AggregateRoot> filterBuilder)
-			=>
-				new DeleteOneModel<AggregateRoot>(filterBuilder.Where(x => x.Id == deletedEntity.Id));
-
 		private void UpdateEntityEntryStatesAfterSave()
 		{
 			var entityEntryLookupKeysAndValues = EntityEntryLookup.Select(x => x).ToArray();
@@ -283,6 +221,5 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				}
 			}
 		}
-
 	}
 }
