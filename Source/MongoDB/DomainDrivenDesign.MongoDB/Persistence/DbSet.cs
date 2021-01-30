@@ -9,6 +9,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	internal interface IDbSet
 	{
+		object Collection { get;  }
 		Task SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries);
 	}
 
@@ -17,10 +18,12 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 	{
 		private readonly IMongoCollection<TEntity> Collection;
 
-		internal DbSet(IMongoDatabase mongoDatabase, string collectionName)
+		internal DbSet(string collectionName, IMongoDatabase mongoDatabase)
 		{
 			Collection = mongoDatabase.GetCollection<TEntity>(collectionName);
 		}
+
+		object IDbSet.Collection => Collection;
 
 		async Task IDbSet.SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries)
 		{
@@ -35,6 +38,11 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			FilterDefinitionBuilder<TEntity> filterBuilder = Builders<TEntity>.Filter;
 			foreach (EntityEntry entityEntry in entityEntries)
 			{
+				unchecked
+				{
+					entityEntry.Entity.ConcurrencyVersion = entityEntry.OriginalEntityConcurrencyVersion + 1;
+				}
+
 				switch (entityEntry.State)
 				{
 					case EntityState.Created:
@@ -44,12 +52,20 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 					case EntityState.Modified:
 						expectedModifiedCount++;
-						updates.Add(CreateReplaceAction((TEntity)entityEntry.Entity, filterBuilder));
+						updates.Add(
+							CreateReplaceAction(
+								(TEntity)entityEntry.Entity,
+								entityEntry.OriginalEntityConcurrencyVersion,
+								filterBuilder));
 						break;
 
 					case EntityState.Deleted:
 						expectedDeletedCount++;
-						updates.Add(CreateDeleteAction((TEntity)entityEntry.Entity, filterBuilder));
+						updates.Add(
+							CreateDeleteAction(
+								(TEntity)entityEntry.Entity,
+								entityEntry.OriginalEntityConcurrencyVersion,
+								filterBuilder));
 						break;
 
 					case EntityState.Unmodified:
@@ -74,16 +90,23 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 		private WriteModel<TEntity> CreateReplaceAction(
 			TEntity updatedEntity,
+			int originalConcurrencyVersion,
 			FilterDefinitionBuilder<TEntity> filterBuilder)
-			=>
-				new ReplaceOneModel<TEntity>(
-					filter: filterBuilder.Where(x => x.Id == updatedEntity.Id),
-					replacement: updatedEntity);
+		=>
+			new ReplaceOneModel<TEntity>(
+				filter: filterBuilder.Where(x => 
+					x.Id == updatedEntity.Id
+					&& x.ConcurrencyVersion == originalConcurrencyVersion),
+				replacement: updatedEntity);
 
 		private WriteModel<TEntity> CreateDeleteAction(
 			TEntity deletedEntity,
+			int originalConcurrencyVersion,
 			FilterDefinitionBuilder<TEntity> filterBuilder)
-			=>
-				new DeleteOneModel<TEntity>(filterBuilder.Where(x => x.Id == deletedEntity.Id));
+		=>
+			new DeleteOneModel<TEntity>(
+				filterBuilder.Where(x =>
+					x.Id == deletedEntity.Id
+					&& x.ConcurrencyVersion == originalConcurrencyVersion));
 	}
 }

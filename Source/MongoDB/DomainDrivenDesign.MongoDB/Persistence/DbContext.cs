@@ -31,21 +31,36 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
 			if (EntityEntryLookup.TryGetValue(key, out EntityEntry entry))
 				return entry;
-			return new EntityEntry(collectionName, entity, EntityState.Unknown);
+			return new EntityEntry(collectionName, entity, EntityState.Unknown, entity.ConcurrencyVersion);
 		}
 
 		internal IQueryable<TEntity> GetQueryable<TEntity>(string collectionName)
 			where TEntity : AggregateRoot
 		=>
-			MongoDatabase.GetCollection<TEntity>(collectionName).AsQueryable();
+			((IMongoCollection<TEntity>)DbSetLookup[collectionName].Collection).AsQueryable();
 
-		internal void Attach<TEntity>(string collectionName, TEntity entity)
+		internal object Attach(Type type, string collectionName, object entity)
+		{
+			AggregateRoot? aggregateRoot = entity as AggregateRoot;
+			if (aggregateRoot is null)
+				throw new ArgumentException($"'{entity.GetType().FullName}'" +
+					$" must be of type '{typeof(AggregateRoot).FullName}'");
+
+			var key = new CollectionNameAndEntityId(collectionName, aggregateRoot.Id);
+			EntityEntry entry = EntityEntryLookup.GetOrAdd(
+				key: key,
+				valueFactory: _ => new EntityEntry(
+					collectionName,
+					aggregateRoot,
+					EntityState.Unmodified,
+					aggregateRoot.ConcurrencyVersion));
+			return entry.Entity;
+		}
+
+		internal TEntity Attach<TEntity>(string collectionName, TEntity entity)
 			where TEntity : AggregateRoot
 		{
-			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
-			_ = EntityEntryLookup.GetOrAdd(
-				key: key,
-				valueFactory: _ => new EntityEntry(collectionName, entity, EntityState.Unmodified));
+			return (TEntity)Attach(typeof(TEntity), collectionName, entity);
 		}
 
 		internal void AddOrUpdate<TEntity>(string collectionName, TEntity entity)
@@ -57,7 +72,11 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
 			EntityEntryLookup.AddOrUpdate(
 				key: key,
-				addValueFactory: _ => new EntityEntry(collectionName, entity, EntityState.Created),
+				addValueFactory: _ => new EntityEntry(
+					collectionName,
+					entity,
+					EntityState.Created,
+					entity.ConcurrencyVersion),
 				updateValueFactory: (_, entry) =>
 				{
 					if (entry.State == EntityState.Deleted)
@@ -65,7 +84,11 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 							$"Cannot call {nameof(AddOrUpdate)} on entity with state {nameof(EntityState.Deleted)}" +
 							$", Entity.Id={entry.Entity.Id}, EntityType={entity.GetType().FullName}",
 							state: EntityState.Deleted);
-					return new EntityEntry(collectionName, entity, EntityState.Modified);
+					return new EntityEntry(
+						entry.CollectionName,
+						entry.Entity,
+						EntityState.Modified,
+						entry.OriginalEntityConcurrencyVersion);
 				});
 		}
 
@@ -75,11 +98,19 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			if (entity.Id == default(ObjectId))
 				throw new ArgumentException("Id has not been set", nameof(entity));
 
-			if (GetEntry(collectionName, entity).State == EntityState.Unknown)
-				throw new InvalidOperationException($"Cannot delete an unknown object");
-
 			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
-			EntityEntryLookup[key] = new EntityEntry(collectionName, entity, EntityState.Deleted);
+			_ = EntityEntryLookup.AddOrUpdate(
+				key: key,
+				addValueFactory: _ => new EntityEntry(
+					collectionName,
+					entity,
+					EntityState.Deleted,
+					entity.ConcurrencyVersion),
+				updateValueFactory: (_, entry) => new EntityEntry(
+					entry.CollectionName,
+					entry.Entity,
+					EntityState.Deleted,
+					entry.OriginalEntityConcurrencyVersion));
 		}
 
 		internal async Task SaveChangesAsync()
@@ -136,7 +167,11 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				retrievedEntity = cursor.Current.First();
 
 			if (retrievedEntity is not null)
-				EntityEntryLookup[key] = new EntityEntry(collectionName, retrievedEntity, EntityState.Unmodified);
+				EntityEntryLookup[key] = new EntityEntry(
+					collectionName,
+					retrievedEntity,
+					EntityState.Unmodified,
+					retrievedEntity.ConcurrencyVersion);
 
 			return retrievedEntity;
 		}
@@ -156,7 +191,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		protected DbSet<TEntity> CreateDbSet<TEntity>(string collectionName)
 			where TEntity : AggregateRoot
 		{
-			var dbSet = new DbSet<TEntity>(MongoDatabase, collectionName);
+			var dbSet = new DbSet<TEntity>(collectionName, MongoDatabase);
 			_ = DbSetLookup.AddOrUpdate(
 				key: collectionName,
 				addValueFactory: _ => dbSet,
@@ -206,7 +241,8 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 						EntityEntryLookup[kvp.Key] = new EntityEntry(
 							collectionName: kvp.Value.CollectionName,
 							entity: kvp.Value.Entity,
-							state: EntityState.Unmodified);
+							state: EntityState.Unmodified,
+							originalEntityConcurrencyVersion: kvp.Value.OriginalEntityConcurrencyVersion + 1);
 						break;
 
 					case EntityState.Deleted:

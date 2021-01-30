@@ -8,6 +8,7 @@ namespace DomainDrivenDesignTestProject.Mongo.Repositories
 {
 	public interface IIncomingFileTransactionRepository
 	{
+		IncomingFileTransaction Attach(IncomingFileTransaction instance);
 		IQueryable<IncomingFileTransaction> Query();
 		void AddOrUpdate(IncomingFileTransaction instance);
 		Task<IncomingFileTransaction?> GetAsync(ObjectId id);

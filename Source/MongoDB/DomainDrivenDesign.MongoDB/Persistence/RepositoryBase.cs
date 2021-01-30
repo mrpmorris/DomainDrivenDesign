@@ -1,7 +1,5 @@
 ﻿using DomainDrivenDesign.MongoDB.DomainClasses;
 using MongoDB.Bson;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -18,6 +16,9 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		{
 			DbContext = dbContext;
 		}
+
+		public TEntity Attach(TEntity entity) =>
+			DbContext.Attach(GetCollectionName(), entity);
 
 		public void AddOrUpdate(TEntity entity)
 		{
