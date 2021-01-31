@@ -61,7 +61,7 @@ namespace DomainDrivenDesignTestProject
 			services.AddScoped<ApplicationDbContext>();
 			services.AddScoped<IUnitOfWork<ApplicationDbContext>, UnitOfWork<ApplicationDbContext>>();
 			services.AddScoped<IIncomingFileTransactionRepository, IncomingFileTransactionRepository>();
-			services.AddScoped<IValidationService, NullValidationService>();
+			services.AddScoped(typeof(ValidationService<>), typeof(NullValidationService<>));
 
 			IServiceProvider sp = services.BuildServiceProvider();
 			var instance = sp.GetService<SampleApp>();

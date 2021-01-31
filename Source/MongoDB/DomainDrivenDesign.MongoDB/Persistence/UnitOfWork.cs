@@ -17,9 +17,9 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		where TDbContext: DbContext
 	{
 		private readonly TDbContext DbContext;
-		private readonly IValidationService ValidationService;
+		private readonly ValidationService<TDbContext> ValidationService;
 
-		public UnitOfWork(TDbContext dbContext, IValidationService validationService)
+		public UnitOfWork(TDbContext dbContext, ValidationService<TDbContext> validationService)
 		{
 			DbContext = dbContext;
 			ValidationService = validationService;

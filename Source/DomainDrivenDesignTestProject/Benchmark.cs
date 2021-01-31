@@ -103,7 +103,9 @@ namespace DomainDrivenDesignTestProject
 				repo.AddOrUpdate(ift);
 
 			IUnitOfWork<Mongo.ApplicationDbContext> uow =
-				new UnitOfWork<Mongo.ApplicationDbContext>(db, new NullValidationService());
+				new UnitOfWork<Mongo.ApplicationDbContext>(
+					db, 
+					new NullValidationService<Mongo.ApplicationDbContext>());
 
 			uow.SaveChangesAsync().Wait();
 		}
