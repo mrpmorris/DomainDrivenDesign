@@ -9,7 +9,6 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	internal interface IDbSet
 	{
-		object Collection { get;  }
 		Task SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries);
 	}
 
@@ -22,8 +21,6 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		{
 			Collection = mongoDatabase.GetCollection<TEntity>(collectionName);
 		}
-
-		object IDbSet.Collection => Collection;
 
 		async Task IDbSet.SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries)
 		{

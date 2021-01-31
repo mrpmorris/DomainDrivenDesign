@@ -41,7 +41,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			where TEntity : AggregateRoot
 		=>
 			new AggregateRootQueryableInterceptor<TEntity>(
-				source: ((IMongoCollection<TEntity>)DbSetLookup[collectionName].Collection).AsQueryable(),
+				source: MongoDatabase.GetCollection<TEntity>(collectionName).AsQueryable(),
 				dbContext: this,
 				collectionName,
 				interceptValue: x => Attach(

@@ -47,7 +47,7 @@ namespace DomainDrivenDesign.MongoDB.Interception
 		{
 			TResult result = Source.Execute<TResult>(expression);
 			if (result is T)
-				DbContext.Attach(typeof(T), CollectionName, result);
+				result = (TResult)DbContext.Attach(typeof(T), CollectionName, result);
 			return result;
 		}
 			
