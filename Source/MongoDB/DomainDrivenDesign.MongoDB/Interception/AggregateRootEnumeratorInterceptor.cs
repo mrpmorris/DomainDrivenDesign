@@ -4,21 +4,21 @@ using System.Collections.Generic;
 
 namespace DomainDrivenDesign.MongoDB.Interception
 {
-	internal class EnumeratorInterceptor<T> : IEnumerator<T?>
+	internal class AggregateRootEnumeratorInterceptor<T> : IEnumerator<T>
 	{
 		private T? CurrentValue;
-		private readonly Func<object?, object?> InterceptValue;
-		private readonly IEnumerator<T?> Source;
+		private readonly Func<object, object> InterceptValue;
+		private readonly IEnumerator<T> Source;
 
-		public EnumeratorInterceptor(IEnumerator<T?> source, Func<object?, object?> interceptValue)
+		public AggregateRootEnumeratorInterceptor(IEnumerator<T> source, Func<object, object> interceptValue)
 		{
 			Source = source;
 			InterceptValue = interceptValue;
 		}
 
-		public T? Current => CurrentValue;
+		public T Current => CurrentValue ?? throw new NullReferenceException();
 
-		object? IEnumerator.Current => Current;
+		object IEnumerator.Current => Current ?? throw new NullReferenceException();
 
 		public void Dispose()
 		{
@@ -30,7 +30,7 @@ namespace DomainDrivenDesign.MongoDB.Interception
 			CurrentValue = default;
 			bool result = Source.MoveNext();
 			if (result)
-				CurrentValue = (T?)InterceptValue(Source.Current);
+				CurrentValue = (T)InterceptValue(Source.Current!);
 			return result;
 		}
 

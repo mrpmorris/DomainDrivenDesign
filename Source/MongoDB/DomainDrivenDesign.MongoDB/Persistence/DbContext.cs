@@ -40,8 +40,10 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		internal IQueryable<TEntity?> GetQueryable<TEntity>(string collectionName)
 			where TEntity : AggregateRoot
 		=>
-			new QueryableInterceptor<TEntity>(
+			new AggregateRootQueryableInterceptor<TEntity>(
 				source: ((IMongoCollection<TEntity>)DbSetLookup[collectionName].Collection).AsQueryable(),
+				dbContext: this,
+				collectionName,
 				interceptValue: x => Attach(
 					type: typeof(TEntity),
 					collectionName: collectionName,

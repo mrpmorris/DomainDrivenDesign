@@ -34,6 +34,15 @@ namespace DomainDrivenDesignTestProject
 			retrievedObject1.ConcurrencyVersion = 999;
 			Repository.AddOrUpdate(retrievedObject1);
 			await UnitOfWork.SaveChangesAsync().ConfigureAwait(false);
+
+			IQueryable<IncomingFileTransaction> query = Repository.Query();
+			query = query.Where(x => x.ConcurrencyVersion == 0);
+			query = query.Where(x => x.ConcurrencyVersion < 1);
+			query.ToList();
+
+
+			retrievedObject1 = query.First();
+			Console.WriteLine("Same == " + (newObject == retrievedObject1));
 		}
 
 		public static void CreateAndRun()
