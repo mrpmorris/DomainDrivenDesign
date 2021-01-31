@@ -28,12 +28,26 @@ namespace DomainDrivenDesignTestProject
 			var newObject = new IncomingFileTransaction();
 			Repository.AddOrUpdate(newObject);
 			await UnitOfWork.SaveChangesAsync().ConfigureAwait(false);
+
+			// Retrieving the same ID should give the same instance
 			var retrievedObject1 = await Repository.GetAsync(newObject.Id).ConfigureAwait(false);
 			Console.WriteLine("Same == " + (newObject == retrievedObject1));
 
+			// Altering the ConcurrencyVersion should have no effect
 			retrievedObject1.ConcurrencyVersion = 999;
 			Repository.AddOrUpdate(retrievedObject1);
 			await UnitOfWork.SaveChangesAsync().ConfigureAwait(false);
+
+			// Queryable should return the same instance
+			retrievedObject1 = Repository.Query()
+				.Where(x => x.ConcurrencyVersion >= 0)
+				.Where(x => x.ConcurrencyVersion < 10)
+				.OrderByDescending(x => x.CreatedUtc)
+				.First();
+			Console.WriteLine("Same == " + (newObject == retrievedObject1));
+
+			// Should be able to select non-aggregate values
+			int concurrencyVersion = Repository.Query().Select(x => x.ConcurrencyVersion).First();
 		}
 
 		public static void CreateAndRun()

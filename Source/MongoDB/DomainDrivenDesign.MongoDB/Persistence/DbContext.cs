@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
+using DomainDrivenDesign.MongoDB.Interception;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
@@ -36,10 +37,17 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 		internal EntityEntry[] GetEntries() => EntityEntryLookup.Values.ToArray();
 
-		internal IQueryable<TEntity> GetQueryable<TEntity>(string collectionName)
+		internal IQueryable<TEntity?> GetQueryable<TEntity>(string collectionName)
 			where TEntity : AggregateRoot
 		=>
-			((IMongoCollection<TEntity>)DbSetLookup[collectionName].Collection).AsQueryable();
+			new AggregateRootQueryableInterceptor<TEntity>(
+				source: MongoDatabase.GetCollection<TEntity>(collectionName).AsQueryable(),
+				dbContext: this,
+				collectionName,
+				interceptValue: x => Attach(
+					type: typeof(TEntity),
+					collectionName: collectionName,
+					entity: x));
 
 		internal object Attach(Type type, string collectionName, object entity)
 		{
@@ -193,12 +201,16 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		protected DbSet<TEntity> CreateDbSet<TEntity>(string collectionName)
 			where TEntity : AggregateRoot
 		{
-			var dbSet = new DbSet<TEntity>(collectionName, MongoDatabase);
+			var dbSet = new DbSet<TEntity>(
+				collectionName: collectionName,
+				mongoDatabase: MongoDatabase);
+
 			_ = DbSetLookup.AddOrUpdate(
 				key: collectionName,
 				addValueFactory: _ => dbSet,
 				updateValueFactory: (_, _) =>
 					throw new ArgumentException($"Duplicate collection name {collectionName}", nameof(collectionName)));
+
 			return dbSet;
 		}
 
