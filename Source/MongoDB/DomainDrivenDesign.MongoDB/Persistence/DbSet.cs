@@ -1,8 +1,10 @@
 ﻿using DomainDrivenDesign.MongoDB.DomainClasses;
 using MongoDB.Driver;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
@@ -12,21 +14,29 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		Task SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries);
 	}
 
-	public class DbSet<TEntity> : IDbSet
+	public class DbSet<TEntity> : IDbSet, IQueryable<TEntity>
 		where TEntity : AggregateRoot
 	{
+		private readonly string CollectionName;
+		private readonly DbContext DbContext;
 		private readonly IMongoCollection<TEntity> Collection;
 
-		internal DbSet(string collectionName, IMongoDatabase mongoDatabase)
+		Type IQueryable.ElementType => typeof(TEntity);
+		Expression IQueryable.Expression => DbContext.GetQueryable<TEntity>(CollectionName).Expression;
+		IQueryProvider IQueryable.Provider => DbContext.GetQueryable<TEntity>(CollectionName).Provider;
+
+		internal DbSet(
+			string collectionName,
+			DbContext dbContext,
+			IMongoDatabase mongoDatabase)
 		{
+			CollectionName = collectionName;
 			Collection = mongoDatabase.GetCollection<TEntity>(collectionName);
+			DbContext = dbContext;
 		}
 
 		async Task IDbSet.SaveCollectionChangesAsync(IEnumerable<EntityEntry> entityEntries)
 		{
-			if (!entityEntries.Any())
-				return;
-
 			int expectedInsertedCount = 0;
 			int expectedModifiedCount = 0;
 			int expectedDeletedCount = 0;
@@ -73,6 +83,9 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				}
 			}
 
+			if (!updates.Any())
+				return;
+
 			BulkWriteResult<TEntity> result = await Collection.BulkWriteAsync(updates).ConfigureAwait(false);
 			if (result.InsertedCount != expectedInsertedCount
 				|| result.ModifiedCount != expectedModifiedCount
@@ -105,5 +118,15 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				filterBuilder.Where(x =>
 					x.Id == deletedEntity.Id
 					&& x.ConcurrencyVersion == originalConcurrencyVersion));
+
+		IEnumerator<TEntity> IEnumerable<TEntity>.GetEnumerator()
+		{
+			throw new NotImplementedException();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

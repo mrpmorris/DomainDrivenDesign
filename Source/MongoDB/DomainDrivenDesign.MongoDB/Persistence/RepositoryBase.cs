@@ -1,5 +1,5 @@
 ﻿using DomainDrivenDesign.MongoDB.DomainClasses;
-using MongoDB.Bson;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -30,7 +30,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			DbContext.Delete(GetCollectionName(), entity);
 		}
 
-		public Task<TEntity?> GetAsync(ObjectId id) =>
+		public Task<TEntity?> GetAsync(Guid id) =>
 			DbContext.GetAsync<TEntity>(GetCollectionName(), id);
 
 		public IQueryable<TEntity> Query() =>

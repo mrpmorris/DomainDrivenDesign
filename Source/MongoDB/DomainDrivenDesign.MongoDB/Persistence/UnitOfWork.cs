@@ -7,25 +7,25 @@ using System.Threading.Tasks;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
-	public interface IUnitOfWork<TDbContext>
+	public interface IUnitOfWork<TDbContext, TValidationError>
 		where TDbContext: DbContext
 	{
-		Task<ValidationError[]> SaveChangesAsync();
+		Task<TValidationError[]> CommitAsync();
 	}
 
-	public class UnitOfWork<TDbContext> : IUnitOfWork<TDbContext>
+	public class UnitOfWork<TDbContext, TValidationError> : IUnitOfWork<TDbContext, TValidationError>
 		where TDbContext: DbContext
 	{
 		private readonly TDbContext DbContext;
-		private readonly ValidationService<TDbContext> ValidationService;
+		private readonly IValidationService<TDbContext, TValidationError> ValidationService;
 
-		public UnitOfWork(TDbContext dbContext, ValidationService<TDbContext> validationService)
+		public UnitOfWork(TDbContext dbContext, IValidationService<TDbContext, TValidationError> validationService)
 		{
 			DbContext = dbContext;
 			ValidationService = validationService;
 		}
 
-		public async Task<ValidationError[]> SaveChangesAsync()
+		public async Task<TValidationError[]> CommitAsync()
 		{
 			IEnumerable<AggregateRoot> entities = DbContext.GetEntries()
 				.Where(x =>
@@ -33,7 +33,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 					|| x.State == EntityState.Modified)
 				.Select(x => x.Entity);
 
-			ValidationError[] validationErrors = await ValidationService
+			TValidationError[] validationErrors = await ValidationService
 				.ValidateAsync(entities)
 				.ConfigureAwait(false);
 
@@ -41,7 +41,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 				return validationErrors;
 
 			await DbContext.SaveChangesAsync().ConfigureAwait(false);
-			return Array.Empty<ValidationError>();
+			return Array.Empty<TValidationError>();
 		}
 	}
 }

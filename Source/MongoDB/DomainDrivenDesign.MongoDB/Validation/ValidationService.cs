@@ -1,20 +1,19 @@
 ﻿using DomainDrivenDesign.MongoDB.Persistence;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace DomainDrivenDesign.MongoDB.Validation
 {
-	public interface ValidationService<TDbContext>
+	public interface IValidationService<TDbContext, TValidationError>
 		where TDbContext : DbContext
 	{
-		Task<ValidationError[]> ValidateAsync(IEnumerable<object> entities);
+		Task<TValidationError[]> ValidateAsync(object entity);
 	}
 
-	public class NullValidationService<TDbContext> : ValidationService<TDbContext>
+	public class NullValidationService<TDbContext> : IValidationService<TDbContext, ValidationError>
 		where TDbContext : DbContext
 	{
-		public Task<ValidationError[]> ValidateAsync(IEnumerable<object> entities)
+		public Task<ValidationError[]> ValidateAsync(object entity)
 		=>
 			Task.FromResult(Array.Empty<ValidationError>());
 	}

@@ -1,16 +1,15 @@
-﻿using MongoDB.Bson;
-using System;
+﻿using System;
 
 namespace DomainDrivenDesign.MongoDB.Persistence
 {
 	public class CollectionNameAndEntityId : IEquatable<CollectionNameAndEntityId>
 	{
 		public string CollectionName { get; }
-		public ObjectId EntityId { get; }
+		public Guid EntityId { get; }
 
 		private int? CachedHashCode;
 
-		public CollectionNameAndEntityId(string collectionName, ObjectId entityId)
+		public CollectionNameAndEntityId(string collectionName, Guid entityId)
 		{
 			CollectionName = collectionName;
 			EntityId = entityId;

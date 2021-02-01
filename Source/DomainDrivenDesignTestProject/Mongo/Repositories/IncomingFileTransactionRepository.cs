@@ -3,6 +3,7 @@ using DomainDrivenDesign.MongoDB.Persistence;
 using System.Linq;
 using MongoDB.Bson;
 using System.Threading.Tasks;
+using System;
 
 namespace DomainDrivenDesignTestProject.Mongo.Repositories
 {
@@ -11,7 +12,7 @@ namespace DomainDrivenDesignTestProject.Mongo.Repositories
 		IncomingFileTransaction Attach(IncomingFileTransaction instance);
 		IQueryable<IncomingFileTransaction> Query();
 		void AddOrUpdate(IncomingFileTransaction instance);
-		Task<IncomingFileTransaction?> GetAsync(ObjectId id);
+		Task<IncomingFileTransaction?> GetAsync(Guid id);
 	}
 
 	public class IncomingFileTransactionRepository :

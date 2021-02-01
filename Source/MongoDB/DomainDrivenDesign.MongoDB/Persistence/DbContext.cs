@@ -1,5 +1,4 @@
-﻿using MongoDB.Bson;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using DomainDrivenDesign.MongoDB.DomainClasses;
 using System;
 using System.Collections.Concurrent;
@@ -105,7 +104,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		internal void Delete<TEntity>(string collectionName, TEntity entity)
 			where TEntity : AggregateRoot
 		{
-			if (entity.Id == default(ObjectId))
+			if (entity.Id == Guid.Empty)
 				throw new ArgumentException("Id has not been set", nameof(entity));
 
 			var key = new CollectionNameAndEntityId(collectionName, entity.Id);
@@ -158,7 +157,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 			}
 		}
 
-		internal async Task<TEntity?> GetAsync<TEntity>(string collectionName, ObjectId id)
+		internal async Task<TEntity?> GetAsync<TEntity>(string collectionName, Guid id)
 			where TEntity : AggregateRoot
 		{
 			var key = new CollectionNameAndEntityId(collectionName, id);
@@ -174,7 +173,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 			TEntity? retrievedEntity = null;
 			if (await cursor.MoveNextAsync().ConfigureAwait(false))
-				retrievedEntity = cursor.Current.First();
+				retrievedEntity = cursor.Current.FirstOrDefault();
 
 			if (retrievedEntity is not null)
 				EntityEntryLookup[key] = new EntityEntry(
@@ -188,7 +187,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 
 		internal Task<TEntity[]> GetManyAsync<TEntity>(
 			string collectionName,
-			IEnumerable<ObjectId> ids)
+			IEnumerable< Guid > ids)
 			where TEntity : AggregateRoot
 		{
 			if (!ids.Any())
@@ -203,6 +202,7 @@ namespace DomainDrivenDesign.MongoDB.Persistence
 		{
 			var dbSet = new DbSet<TEntity>(
 				collectionName: collectionName,
+				dbContext: this,
 				mongoDatabase: MongoDatabase);
 
 			_ = DbSetLookup.AddOrUpdate(

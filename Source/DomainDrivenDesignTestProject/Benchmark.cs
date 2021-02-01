@@ -102,12 +102,12 @@ namespace DomainDrivenDesignTestProject
 			foreach (Mongo.DomainClasses.IncomingFileTransaction ift in data)
 				repo.AddOrUpdate(ift);
 
-			IUnitOfWork<Mongo.ApplicationDbContext> uow =
-				new UnitOfWork<Mongo.ApplicationDbContext>(
+			var uow =
+				new UnitOfWork<Mongo.ApplicationDbContext, ValidationError>(
 					db, 
 					new NullValidationService<Mongo.ApplicationDbContext>());
 
-			uow.SaveChangesAsync().Wait();
+			uow.CommitAsync().Wait();
 		}
 	}
 }

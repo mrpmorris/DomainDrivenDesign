@@ -12,11 +12,11 @@ namespace DomainDrivenDesignTestProject
 {
 	public class SampleApp
 	{
-		private readonly IUnitOfWork<ApplicationDbContext> UnitOfWork;
+		private readonly IUnitOfWork<ApplicationDbContext, ValidationError> UnitOfWork;
 		private readonly IIncomingFileTransactionRepository Repository;
 
 		public SampleApp(
-			IUnitOfWork<ApplicationDbContext> unitOfWork,
+			IUnitOfWork<ApplicationDbContext, ValidationError> unitOfWork,
 			IIncomingFileTransactionRepository repository)
 		{
 			UnitOfWork = unitOfWork;
@@ -26,8 +26,9 @@ namespace DomainDrivenDesignTestProject
 		public async Task RunAsync()
 		{
 			var newObject = new IncomingFileTransaction();
+			newObject.Id = Guid.Parse("10dd8f53-f383-49e1-9dae-e9f22011a97d");
 			Repository.AddOrUpdate(newObject);
-			await UnitOfWork.SaveChangesAsync().ConfigureAwait(false);
+			await UnitOfWork.CommitAsync().ConfigureAwait(false);
 
 			// Retrieving the same ID should give the same instance
 			var retrievedObject1 = await Repository.GetAsync(newObject.Id).ConfigureAwait(false);
@@ -36,7 +37,7 @@ namespace DomainDrivenDesignTestProject
 			// Altering the ConcurrencyVersion should have no effect
 			retrievedObject1.ConcurrencyVersion = 999;
 			Repository.AddOrUpdate(retrievedObject1);
-			await UnitOfWork.SaveChangesAsync().ConfigureAwait(false);
+			await UnitOfWork.CommitAsync().ConfigureAwait(false);
 
 			// Queryable should return the same instance
 			retrievedObject1 = Repository.Query()
@@ -59,9 +60,12 @@ namespace DomainDrivenDesignTestProject
 					connectionString: "mongodb://localhost:27017",
 					databaseName: "DomainDrivenMongo"));
 			services.AddScoped<ApplicationDbContext>();
-			services.AddScoped<IUnitOfWork<ApplicationDbContext>, UnitOfWork<ApplicationDbContext>>();
+			services.AddScoped<IUnitOfWork<ApplicationDbContext,ValidationError>, UnitOfWork<ApplicationDbContext, ValidationError>>();
 			services.AddScoped<IIncomingFileTransactionRepository, IncomingFileTransactionRepository>();
-			services.AddScoped(typeof(ValidationService<>), typeof(NullValidationService<>));
+			services.AddScoped<
+					IValidationService<ApplicationDbContext, ValidationError>,
+					NullValidationService<ApplicationDbContext>
+				> ();
 
 			IServiceProvider sp = services.BuildServiceProvider();
 			var instance = sp.GetService<SampleApp>();
