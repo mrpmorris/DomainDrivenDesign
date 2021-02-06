@@ -1,4 +1,5 @@
-﻿using DomainDrivenDesign.MongoDB.Persistence;
+﻿using Community.OData.Linq;
+using DomainDrivenDesign.MongoDB.Persistence;
 using DomainDrivenDesign.MongoDB.Validation;
 using DomainDrivenDesignTestProject.Mongo;
 using DomainDrivenDesignTestProject.Mongo.DomainClasses;
@@ -25,14 +26,17 @@ namespace DomainDrivenDesignTestProject
 
 		public async Task RunAsync()
 		{
-			var newObject = new IncomingFileTransaction();
-			newObject.Id = Guid.Parse("10dd8f53-f383-49e1-9dae-e9f22011a97d");
+			var newObject = new IncomingFileTransaction()
+			{
+				Id = Guid.Parse("10dd8f53-f383-49e1-9dae-e9f22011a97d"),
+				Filename = "Bob"
+			};
 			Repository.AddOrUpdate(newObject);
 			await UnitOfWork.CommitAsync().ConfigureAwait(false);
 
 			// Retrieving the same ID should give the same instance
 			var retrievedObject1 = await Repository.GetAsync(newObject.Id).ConfigureAwait(false);
-			Console.WriteLine("Same == " + (newObject == retrievedObject1));
+			Console.WriteLine("Repository.GetAsync: Same == " + (newObject == retrievedObject1));
 
 			// Altering the ConcurrencyVersion should have no effect
 			retrievedObject1.ConcurrencyVersion = 999;
@@ -45,7 +49,14 @@ namespace DomainDrivenDesignTestProject
 				.Where(x => x.ConcurrencyVersion < 10)
 				.OrderByDescending(x => x.CreatedUtc)
 				.First();
-			Console.WriteLine("Same == " + (newObject == retrievedObject1));
+			Console.WriteLine("Repository.Query: Same == " + (newObject == retrievedObject1));
+
+			// OData should work
+			retrievedObject1 = Repository.Query()
+				.OData()
+				.Filter("((contains(Filename,'Bob')))")
+				.FirstOrDefault();
+			Console.WriteLine("OData: Same == " + (newObject == retrievedObject1));
 
 			// Should be able to select non-aggregate values
 			int concurrencyVersion = Repository.Query().Select(x => x.ConcurrencyVersion).First();

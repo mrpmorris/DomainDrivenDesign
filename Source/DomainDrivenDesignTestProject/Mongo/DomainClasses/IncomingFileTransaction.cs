@@ -5,6 +5,7 @@ namespace DomainDrivenDesignTestProject.Mongo.DomainClasses
 {
 	public class IncomingFileTransaction : AggregateRoot
 	{
+		public string Filename { get; set; }
 		public IReadOnlyList<IncomingFileTransactionInfo> Infos { get; set; }
 		public IReadOnlyList<IncomingFileTransactionEvent> Events { get; set; }
 
