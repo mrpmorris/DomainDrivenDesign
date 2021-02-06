@@ -46,15 +46,15 @@ namespace DomainDrivenDesignTestProject
 			retrievedObject1 = Repository.Query()
 				.Where(x => x.ConcurrencyVersion >= 0)
 				.Where(x => x.ConcurrencyVersion < 10)
-				.OrderByDescending(x => x.CreatedUtc)
+				.Where(x => x.Id == newObject.Id)
 				.First();
 			Console.WriteLine("Repository.Query: Same == " + (newObject == retrievedObject1));
 
 			// OData should work
 			retrievedObject1 = Repository.Query()
-				.OrderByDescending(x => x.CreatedUtc)
 				.OData()
 				.Filter("((contains(Filename,'Bob')))")
+				.Where(x => x.Id == newObject.Id)
 				.FirstOrDefault();
 			Console.WriteLine("OData: Same == " + (newObject == retrievedObject1));
 
