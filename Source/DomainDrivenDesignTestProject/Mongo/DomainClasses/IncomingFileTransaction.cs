@@ -8,7 +8,7 @@ namespace DomainDrivenDesignTestProject.Mongo.DomainClasses
 		public string Filename { get; set; }
 		public IReadOnlyList<IncomingFileTransactionInfo> Infos { get; set; }
 		public IReadOnlyList<IncomingFileTransactionEvent> Events { get; set; }
-
+		
 		public IncomingFileTransaction()
 		{
 			Infos = new List<IncomingFileTransactionInfo>()

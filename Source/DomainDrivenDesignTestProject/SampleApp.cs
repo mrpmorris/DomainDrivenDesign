@@ -28,8 +28,7 @@ namespace DomainDrivenDesignTestProject
 		{
 			var newObject = new IncomingFileTransaction()
 			{
-				Id = Guid.Parse("10dd8f53-f383-49e1-9dae-e9f22011a97d"),
-				Filename = "Bob"
+				Filename = "Bob Monkhouse"
 			};
 			Repository.AddOrUpdate(newObject);
 			await UnitOfWork.CommitAsync().ConfigureAwait(false);
@@ -53,13 +52,15 @@ namespace DomainDrivenDesignTestProject
 
 			// OData should work
 			retrievedObject1 = Repository.Query()
+				.OrderByDescending(x => x.CreatedUtc)
 				.OData()
 				.Filter("((contains(Filename,'Bob')))")
 				.FirstOrDefault();
 			Console.WriteLine("OData: Same == " + (newObject == retrievedObject1));
 
 			// Should be able to select non-aggregate values
-			int concurrencyVersion = Repository.Query().Select(x => x.ConcurrencyVersion).First();
+			string retrievedFilename = Repository.Query().Select(x => x.Filename).First();
+			Console.WriteLine("Projection: Same == " + (newObject.Filename == retrievedFilename));
 		}
 
 		public static void CreateAndRun()
